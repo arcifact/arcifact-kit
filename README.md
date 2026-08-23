@@ -14,6 +14,14 @@ failure step suppressed because the job that produces its guard did not
 run. A worked sample, with the record, the workflow and three verifiers,
 is at https://arcifact.io/gate
 
+Gate runs in two forms and this repository serves both. A one-off report
+on a workflow you send, and a GitHub App that runs the same analysis on
+every pull request that changes what your gate claims. The verifiers
+here recompute either one from your own files, offline, running none of
+my code. That is the point of publishing them: a finding you can only
+accept on faith is not evidence, which is the same objection the
+instrument raises about a green check.
+
 **Model Evidence** measures one specific failure in language models:
 fabricated evidence. Each item asks which single observation would
 settle a stated question, and a model that guesses names an observation
