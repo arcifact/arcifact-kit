@@ -1,5 +1,3 @@
-import re
-import subprocess
 #!/usr/bin/env python3
 """Verify an Arcifact report against the common envelope.
 
@@ -39,6 +37,8 @@ Requires Python 3.9+. Uses jsonschema when available for full schema
 validation, and falls back to structural checks with an INCOMPLETE note
 when it is absent. pynacl is required only for issued signatures.
 """
+import re
+import subprocess
 import argparse
 import hashlib
 import json
