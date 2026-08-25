@@ -1,0 +1,2 @@
+jobs 6 · N = 30 valid orderings (static job-ID DAG model)
+p(report_test_success before action_validators) = 6/30 = 0.200000 exactly 6/30

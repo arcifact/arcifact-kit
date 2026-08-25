@@ -69,7 +69,7 @@ jobs:
         run: python -m pytest tests/ -q
       - name: Exact recount is exact, not sampled
         run: |
-          python tools/witness_recount.py tests/fixtures/specific_gate.yaml \\
+          python tools/witness_recount.py tests/fixtures/specific_gate.yaml \
             report_test_success action_validators | tee rc.txt
           grep -q "6/30 = 0.200000 exactly" rc.txt
       - name: Certificate verifier (issued sample VALID end to end)
