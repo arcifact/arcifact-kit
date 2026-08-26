@@ -28,6 +28,49 @@ settle a stated question, and a model that guesses names an observation
 that does not exist. The banks are frozen and hash-verified, and the
 scorer here is the one used for published results.
 
+---
+
+## Two products, two paths. Pick one.
+
+This repository serves both things Arcifact measures, and the combined
+contents dilute either story if you read straight through. You almost
+certainly want one of these.
+
+### I have a Gate report and want to check it
+
+```
+git clone https://github.com/arcifact/arcifact-kit && cd arcifact-kit
+python3 tools/verify_report.py path/to/record.json
+```
+
+That is the whole thing. It recomputes every claim from the record and
+prints a verdict, and it will say **INCOMPLETE** with each unchecked
+item named rather than pass on evidence it does not have. No network, no
+account, no dependency beyond the standard library.
+
+Jump to [Gate records](#gate-records). Everything before that section is
+about model evaluation and does not apply to you.
+
+### I want to check what a required check on my repository proves
+
+No installation and no account:
+
+```
+https://arcifact.io/r/<org>/<repo>
+```
+
+Any public repository. See
+[gate-demo](https://github.com/arcifact-dev/gate-demo) for three live
+pull requests where GitHub reports success and Gate reports a broken
+warrant.
+
+### I am evaluating a model against a frozen instrument
+
+Continue below. The banks, the scorer and the reference results are all
+here, and the next section is written for you.
+
+---
+
 ## For evaluators, before anything else
 
 Running this kit sends nothing to us. `run_frontier.py` calls the

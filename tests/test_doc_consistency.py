@@ -94,3 +94,39 @@ def test_every_tool_referenced_in_the_readme_exists():
     missing = [t for t in sorted(named)
                if not os.path.exists(os.path.join(ROOT, "tools", t))]
     assert not missing, f"README names tools that do not exist: {missing}"
+
+
+# --------------------------- the README must route, and its links work
+
+def test_the_readme_routes_before_it_explains():
+    """The reviewer: the combined README dilutes the immediate Gate
+    story. Gate appeared at section 11 of 16, behind eleven sections of
+    model evaluation, in the repository that is the entry point for
+    anybody checking a Gate report."""
+    src = _read("README.md")
+    heads = re.findall(r"^#{2,3} (.+)$", src, re.M)
+    assert heads, "no sections"
+    first = " ".join(heads[:4]).lower()
+    assert "gate report" in first, (
+        "a reader with a Gate report must be routed in the first "
+        "screen, not at section 11")
+
+
+def test_every_in_page_anchor_resolves():
+    """A routing block whose links do not land is worse than no routing
+    block: it moves a reader and then loses them."""
+    src = _read("README.md")
+    heads = {re.sub(r"[^a-z0-9 -]", "", h.lower()).replace(" ", "-")
+             for h in re.findall(r"^#{1,6} (.+)$", src, re.M)}
+    bad = [a for a in re.findall(r"\]\(#([a-z0-9-]+)\)", src)
+           if a not in heads]
+    assert not bad, f"anchors that do not resolve: {bad}"
+
+
+def test_the_canonical_verify_command_names_a_real_tool():
+    """One command, before the model-evaluation content. If it names a
+    script that is not here the first thing a reviewer runs fails."""
+    src = _read("README.md")
+    m = re.search(r"python3 (tools/\w+\.py)", src)
+    assert m, "no canonical verify command in the README"
+    assert os.path.exists(os.path.join(ROOT, m.group(1))), m.group(1)
