@@ -14,6 +14,12 @@ tools/witness_verify_light.py, checks the source digest, every
 chain edge against the file, and every exhibit's validity and
 direction, in linear time, with no reconstruction of the space.
 Full mode reconstructs the space and recomputes every count and
-proportion; it is available under evaluation terms.
+proportion. It is PUBLIC: tools/witness_recount.py is in this
+repository and is what the published samples are checked with.
+This paragraph said it was available under evaluation terms until
+2026-08-26. That was true once, the README was corrected when it
+stopped being true, and this file was not. A document that
+describes a capability as withheld when it is published tells a
+reader the wrong thing about what they are allowed to do.
 Patents pending GB2618664.3 and GB2619009.0. Contact:
 arcifact.io.
