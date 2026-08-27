@@ -71,11 +71,18 @@ the signature is recorded in a public transparency log.
 
 ```
 cosign verify-blob \
-  --bundle arcifact-kit-<version>.tar.gz.sigstore.json \
-  --certificate-identity "https://github.com/arcifact/arcifact-kit/.github/workflows/release.yml@refs/tags/v<version>" \
+  --bundle arcifact-kit-1.3.0.tar.gz.sigstore.json \
+  --certificate-identity "https://github.com/arcifact/arcifact-kit/.github/workflows/release.yml@refs/tags/v1.3.0" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  arcifact-kit-<version>.tar.gz
+  arcifact-kit-1.3.0.tar.gz
 ```
+
+That prints `Verified OK`. It was run against
+[v1.3.0](https://github.com/arcifact/arcifact-kit/releases/tag/v1.3.0)
+downloaded fresh, and it refuses in both directions worth checking: one
+byte appended to the tarball fails the digest match, and naming a
+different repository fails the identity check while telling you who
+actually signed.
 
 The identity is the **workflow**, not a person, so this binds the
 artefact to the run that built it rather than to somebody who could be
