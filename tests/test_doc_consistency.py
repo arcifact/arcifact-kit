@@ -140,11 +140,6 @@ def test_the_release_workflow_signs_and_then_verifies():
     recipient."""
     p = os.path.join(ROOT, ".github", "workflows", "release.yml")
     if not os.path.exists(p):
-        # Staged in docs/release until a token with `workflow` scope
-        # installs it. The tests still hold its contents, so it cannot
-        # rot while it waits.
-        p = os.path.join(ROOT, "docs", "release", "release.yml")
-    if not os.path.exists(p):
         pytest.skip("no release workflow")
     src = open(p, encoding="utf-8").read()
     assert "cosign sign-blob" in src
@@ -158,11 +153,6 @@ def test_the_release_refuses_a_credential_before_signing():
     """A signed archive containing a credential is a credential with a
     provenance record attached."""
     p = os.path.join(ROOT, ".github", "workflows", "release.yml")
-    if not os.path.exists(p):
-        # Staged in docs/release until a token with `workflow` scope
-        # installs it. The tests still hold its contents, so it cannot
-        # rot while it waits.
-        p = os.path.join(ROOT, "docs", "release", "release.yml")
     if not os.path.exists(p):
         pytest.skip("no release workflow")
     src = open(p, encoding="utf-8").read()

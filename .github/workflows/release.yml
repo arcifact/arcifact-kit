@@ -1,15 +1,3 @@
-# NOT YET INSTALLED. This file lives in docs/release/ because the token
-# available to me carries `repo` scope and not `workflow`, and GitHub
-# refuses a push that creates a workflow without it.
-#
-# That scope was dropped on purpose: the previous token held
-# delete_repo, repo and workflow, and nothing used the other two. The
-# narrower token is the right call and this is what it costs.
-#
-# To install: copy to .github/workflows/release.yml and push with a
-# token carrying `workflow` scope, or add the file through the GitHub
-# web editor, which does not require it.
-#
 # Build a release, sign it keylessly, and attach the bundle.
 #
 # The kit shipped tarballs with a sha256 beside them. A digest served
