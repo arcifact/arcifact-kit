@@ -1,0 +1,143 @@
+# NOT YET INSTALLED. This file lives in docs/release/ because the token
+# available to me carries `repo` scope and not `workflow`, and GitHub
+# refuses a push that creates a workflow without it.
+#
+# That scope was dropped on purpose: the previous token held
+# delete_repo, repo and workflow, and nothing used the other two. The
+# narrower token is the right call and this is what it costs.
+#
+# To install: copy to .github/workflows/release.yml and push with a
+# token carrying `workflow` scope, or add the file through the GitHub
+# web editor, which does not require it.
+#
+# Build a release, sign it keylessly, and attach the bundle.
+#
+# The kit shipped tarballs with a sha256 beside them. A digest served
+# from the same place as the artefact proves the bytes did not change in
+# transit. It says nothing about who produced them, because anybody who
+# can replace the tarball can replace the digest.
+#
+# Sigstore signs against an OIDC identity and records the signature in a
+# public transparency log. There is no key to lose, and a forged
+# signature is publicly detectable rather than merely denied.
+#
+# The identity is this workflow in this repository, so `cosign
+# verify-blob` binds an artefact to the run that built it rather than to
+# a person who could be impersonated.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "tag to build"
+        required: true
+
+permissions:
+  contents: write
+  id-token: write        # required for keyless signing
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: the suite must pass before anything is built
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest tests/ -q
+
+      - name: name the version once
+        id: v
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "ver=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: build
+        run: |
+          V="${{ steps.v.outputs.ver }}"
+          # Exclude what a recipient does not need and must not receive.
+          tar --exclude-vcs \
+              --exclude='.github' \
+              --exclude='__pycache__' \
+              --exclude='.pytest_cache' \
+              -czf "arcifact-kit-${V}.tar.gz" \
+              README.md LICENSE* tools/ banks/ tests/ docs/ 2>/dev/null || \
+          tar --exclude-vcs --exclude='__pycache__' \
+              -czf "arcifact-kit-${V}.tar.gz" \
+              README.md tools/ banks/ tests/
+          sha256sum "arcifact-kit-${V}.tar.gz" \
+            > "arcifact-kit-${V}.tar.gz.sha256"
+
+      - name: refuse to ship a credential
+        run: |
+          V="${{ steps.v.outputs.ver }}"
+          # A second, dumber layer than the tar exclusions. If any of
+          # these reach the archive the release stops rather than
+          # warning, because a release that exists is a release somebody
+          # will download.
+          if tar -tzf "arcifact-kit-${V}.tar.gz" | grep -Eq \
+             '(^|/)\.(secrets|env)(/|$)|\.(pem|key|p12|pfx)$|id_rsa|credentials'; then
+            echo "REFUSED: credential-shaped member in the archive"
+            tar -tzf "arcifact-kit-${V}.tar.gz" | grep -E \
+              '(^|/)\.(secrets|env)(/|$)|\.(pem|key|p12|pfx)$|id_rsa'
+            exit 1
+          fi
+          echo "no credential-shaped members"
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: sign the built bytes
+        run: |
+          V="${{ steps.v.outputs.ver }}"
+          cosign sign-blob --yes \
+            --bundle "arcifact-kit-${V}.tar.gz.sigstore.json" \
+            "arcifact-kit-${V}.tar.gz"
+
+      - name: verify what we just signed
+        run: |
+          V="${{ steps.v.outputs.ver }}"
+          # Signing and not verifying leaves a bundle nobody has proved
+          # is checkable. This runs the exact command the README tells a
+          # recipient to run.
+          cosign verify-blob \
+            --bundle "arcifact-kit-${V}.tar.gz.sigstore.json" \
+            --certificate-identity \
+              "https://github.com/${{ github.repository }}/.github/workflows/release.yml@${{ github.ref }}" \
+            --certificate-oidc-issuer \
+              "https://token.actions.githubusercontent.com" \
+            "arcifact-kit-${V}.tar.gz"
+
+      - name: publish
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.v.outputs.tag }}
+          files: |
+            arcifact-kit-*.tar.gz
+            arcifact-kit-*.tar.gz.sha256
+            arcifact-kit-*.tar.gz.sigstore.json
+          body: |
+            Signed with Sigstore keyless. No key exists to lose, and the
+            signature is recorded in a public transparency log.
+
+            Verify before trusting:
+
+            ```
+            cosign verify-blob \
+              --bundle arcifact-kit-${{ steps.v.outputs.ver }}.tar.gz.sigstore.json \
+              --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/release.yml@refs/tags/${{ steps.v.outputs.tag }}" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              arcifact-kit-${{ steps.v.outputs.ver }}.tar.gz
+            ```
+
+            The identity is the workflow, not a person. That binds the
+            artefact to the run that built it.
+
+            The `.sha256` is still attached and still only proves the
+            bytes did not change in transit. Anybody who can replace the
+            tarball can replace the digest; only the signature says who
+            produced it.

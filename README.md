@@ -64,6 +64,31 @@ Any public repository. See
 pull requests where GitHub reports success and Gate reports a broken
 warrant.
 
+### I want to install a release and check where it came from
+
+Releases are signed with Sigstore keyless. There is no key to lose, and
+the signature is recorded in a public transparency log.
+
+```
+cosign verify-blob \
+  --bundle arcifact-kit-<version>.tar.gz.sigstore.json \
+  --certificate-identity "https://github.com/arcifact/arcifact-kit/.github/workflows/release.yml@refs/tags/v<version>" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  arcifact-kit-<version>.tar.gz
+```
+
+The identity is the **workflow**, not a person, so this binds the
+artefact to the run that built it rather than to somebody who could be
+impersonated.
+
+A `.sha256` is attached too. It proves the bytes did not change in
+transit and nothing more: anybody who can replace the tarball can
+replace the digest. Only the signature says who produced it.
+
+If you would rather not install anything, cloning the repository is the
+supported path and always will be. Every tool here runs from the
+standard library.
+
 ### I am evaluating a model against a frozen instrument
 
 Continue below. The banks, the scorer and the reference results are all
