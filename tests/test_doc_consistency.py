@@ -130,3 +130,62 @@ def test_the_canonical_verify_command_names_a_real_tool():
     m = re.search(r"python3 (tools/\w+\.py)", src)
     assert m, "no canonical verify command in the README"
     assert os.path.exists(os.path.join(ROOT, m.group(1))), m.group(1)
+
+
+# ------------------------------------- releases must be verifiable
+
+def test_the_release_workflow_signs_and_then_verifies():
+    """Signing without verifying leaves a bundle nobody has proved is
+    checkable. The workflow runs the exact command the README gives a
+    recipient."""
+    p = os.path.join(ROOT, ".github", "workflows", "release.yml")
+    if not os.path.exists(p):
+        # Staged in docs/release until a token with `workflow` scope
+        # installs it. The tests still hold its contents, so it cannot
+        # rot while it waits.
+        p = os.path.join(ROOT, "docs", "release", "release.yml")
+    if not os.path.exists(p):
+        pytest.skip("no release workflow")
+    src = open(p, encoding="utf-8").read()
+    assert "cosign sign-blob" in src
+    assert "cosign verify-blob" in src, (
+        "a release that signs and never verifies has not proved the "
+        "bundle is checkable")
+    assert "id-token: write" in src, "keyless signing needs id-token"
+
+
+def test_the_release_refuses_a_credential_before_signing():
+    """A signed archive containing a credential is a credential with a
+    provenance record attached."""
+    p = os.path.join(ROOT, ".github", "workflows", "release.yml")
+    if not os.path.exists(p):
+        # Staged in docs/release until a token with `workflow` scope
+        # installs it. The tests still hold its contents, so it cannot
+        # rot while it waits.
+        p = os.path.join(ROOT, "docs", "release", "release.yml")
+    if not os.path.exists(p):
+        pytest.skip("no release workflow")
+    src = open(p, encoding="utf-8").read()
+    assert "REFUSED" in src and "exit 1" in src
+    for shape in ("secrets", "pem", "id_rsa"):
+        assert shape in src, f"the guard does not mention {shape}"
+
+
+def test_the_readme_tells_a_recipient_how_to_verify():
+    src = _read("README.md")
+    assert "cosign verify-blob" in src, (
+        "a signed release nobody is told how to check is a signature "
+        "nobody will check")
+    assert "certificate-identity" in src, (
+        "an unbound verify establishes that somebody signed, which is "
+        "true of anyone")
+
+
+def test_the_readme_does_not_overstate_the_digest():
+    """The sha256 was the only integrity claim for four releases."""
+    src = _read("README.md")
+    if ".sha256" not in src:
+        pytest.skip("no digest mentioned")
+    assert "transit" in src, (
+        "the README must say what a digest served from the same place "
+        "as the artefact does not prove")
