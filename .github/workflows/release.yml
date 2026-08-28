@@ -31,12 +31,31 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: the suite must pass before anything is built
         run: |
           python3 -m pip install --quiet pytest
           python3 -m pytest tests/ -q
+
+      - name: a dispatched build must name a tag that exists
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # workflow_dispatch accepted an arbitrary tag string and
+          # published the CURRENT workflow bytes under it. That lets a
+          # release be minted for a tag nobody ever pushed, and the
+          # Sigstore identity would attest to it truthfully.
+          T="${{ inputs.tag }}"
+          git fetch --tags --quiet
+          git rev-parse --verify "refs/tags/${T}" >/dev/null 2>&1 || {
+            echo "refusing: tag ${T} does not exist in this repository"
+            exit 1
+          }
+          if [ "$(git rev-parse "refs/tags/${T}^{commit}")" != "${{ github.sha }}" ]; then
+            echo "refusing: tag ${T} does not point at the checked-out commit"
+            exit 1
+          fi
+          echo "tag ${T} exists and matches the build commit"
 
       - name: name the version once
         id: v
@@ -101,7 +120,7 @@ jobs:
           fi
           echo "no credential-shaped members"
 
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
 
       - name: sign the built bytes
         run: |
@@ -125,7 +144,7 @@ jobs:
             "arcifact-kit-${V}.tar.gz"
 
       - name: publish
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ steps.v.outputs.tag }}
           files: |
