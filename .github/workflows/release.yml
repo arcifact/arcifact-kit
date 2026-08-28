@@ -78,16 +78,26 @@ jobs:
           #
           # Ship everything except what a recipient must not receive,
           # and normalise the metadata so the archive is reproducible.
+          # WRITE THE ARCHIVE OUTSIDE THE TREE IT ARCHIVES.
+          #
+          # Creating it in place meant tar was reading a directory that
+          # was growing by the file it was writing: "tar: .: file
+          # changed as we read it", exit 1. Building to a temporary path
+          # and moving it back is the fix, and it also guarantees the
+          # archive never contains a previous archive.
+          OUT="$(mktemp -d)/arcifact-kit-${V}.tar.gz"
           tar --exclude-vcs \
               --exclude='.github' \
               --exclude='__pycache__' \
               --exclude='.pytest_cache' \
               --exclude='.secrets' \
               --exclude='*.pem' \
+              --exclude='*.tar.gz' \
               --sort=name \
               --owner=0 --group=0 --numeric-owner \
               --mtime="@${SOURCE_DATE_EPOCH:-0}" \
-              -czf "arcifact-kit-${V}.tar.gz" .
+              -czf "$OUT" .
+          mv "$OUT" "arcifact-kit-${V}.tar.gz"
           sha256sum "arcifact-kit-${V}.tar.gz" \
             > "arcifact-kit-${V}.tar.gz.sha256"
 
