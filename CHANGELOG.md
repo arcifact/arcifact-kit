@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.3.1
+
+Fixes the release archive. v1.3.0 was signed correctly and shipped
+incomplete bytes.
+
+The workflow built the tarball from an allowlist of paths that omitted
+`examples/`, `SECURITY.md`, `CHANGELOG.md` and the manifests the test
+suite reads. It tested the source tree and then signed a different
+archive, so extracting v1.3.0 and running its own suite produced 39
+passed and 25 failed. The signature was genuine; it attested to bytes
+that do not work.
+
+The archive now ships everything except what a recipient must not
+receive, with sorted entries and normalised ownership and timestamps so
+it is reproducible. A new step extracts the built archive into a clean
+directory and runs the full suite against it before the signing step.
+
+Release actions are pinned by commit SHA rather than mutable major
+tags, and a dispatched build now refuses a tag that does not exist or
+does not point at the commit being built.
+
+No library or bank content changed between v1.3.0 and v1.3.1.
+
+## v1.3.0
+
+Adds Sigstore keyless signing to the release, so a downloaded archive
+can be verified against the workflow identity that produced it without
+trusting a key we hold.
+
 ## v1.2.1
 
 Fixes the public verification workflow, which had been red since v1.2.0.
