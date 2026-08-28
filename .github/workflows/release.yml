@@ -49,17 +49,41 @@ jobs:
         run: |
           V="${{ steps.v.outputs.ver }}"
           # Exclude what a recipient does not need and must not receive.
+          # AN ALLOWLIST OF PATHS OMITTED WHAT THE TESTS NEED.
+          #
+          # v1.3.0 shipped without examples/, SECURITY.md, CHANGELOG.md
+          # and the manifests the suite reads. Extracted, it scored 39
+          # passed and 25 failed, so the release provided genuine
+          # Sigstore provenance for defective bytes. That is worse than
+          # no signature: it attests to something broken.
+          #
+          # Ship everything except what a recipient must not receive,
+          # and normalise the metadata so the archive is reproducible.
           tar --exclude-vcs \
               --exclude='.github' \
               --exclude='__pycache__' \
               --exclude='.pytest_cache' \
-              -czf "arcifact-kit-${V}.tar.gz" \
-              README.md LICENSE* tools/ banks/ tests/ docs/ 2>/dev/null || \
-          tar --exclude-vcs --exclude='__pycache__' \
-              -czf "arcifact-kit-${V}.tar.gz" \
-              README.md tools/ banks/ tests/
+              --exclude='.secrets' \
+              --exclude='*.pem' \
+              --sort=name \
+              --owner=0 --group=0 --numeric-owner \
+              --mtime="@${SOURCE_DATE_EPOCH:-0}" \
+              -czf "arcifact-kit-${V}.tar.gz" .
           sha256sum "arcifact-kit-${V}.tar.gz" \
             > "arcifact-kit-${V}.tar.gz.sha256"
+
+      - name: test the exact bytes that will be signed
+        run: |
+          # THE GATE THAT WAS MISSING. The workflow tested the source
+          # tree and then signed a different archive. Nothing ever
+          # extracted what it signed and ran the suite against it.
+          V="${{ steps.v.outputs.ver }}"
+          rm -rf /tmp/extracted && mkdir -p /tmp/extracted
+          tar xzf "arcifact-kit-${V}.tar.gz" -C /tmp/extracted
+          cd /tmp/extracted
+          python3 -m pip install --quiet pytest 2>/dev/null || true
+          python3 -m pytest -q
+          echo "the extracted archive passes its own suite"
 
       - name: refuse to ship a credential
         run: |
