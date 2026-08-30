@@ -52,6 +52,7 @@ import re
 import sys
 
 SCHEMA_ID = "arcifact-certificate/1"
+SCHEMA_IDS = ("arcifact-certificate/1", "arcifact-certificate/2")
 CANON_ID = "arcifact-canon/1"
 RANK = {"draft": 0, "report": 1, "issued": 2}
 
@@ -95,8 +96,8 @@ def check_schema(cert, schema_path):
         except ImportError:
             pass
     errs = []
-    if cert.get("schema_version") != SCHEMA_ID:
-        errs.append("schema_version must be " + SCHEMA_ID)
+    if cert.get("schema_version") not in SCHEMA_IDS:
+        errs.append("schema_version must be one of " + ", ".join(SCHEMA_IDS))
     if not re.fullmatch(r"[0-9a-f]{64}", str(cert.get("sha256", ""))):
         errs.append("sha256 not a full sha256")
     for k in ("issued", "expires"):
